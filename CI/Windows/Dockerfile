@@ -11,7 +11,7 @@ FROM ${FROM_IMAGE}
 SHELL ["cmd", "/S", "/C"]
 
 # Set up environment to collect install errors.
-COPY CI\Windows\Install.cmd C:\TEMP\
+COPY CI\Windows\ C:\TEMP\
 ADD https://aka.ms/vscollect.exe C:\TEMP\collect.exe
 # Install Node.js LTS
 ADD https://nodejs.org/dist/v8.11.3/node-v8.11.3-x64.msi C:\TEMP\node-install.msi
@@ -21,19 +21,8 @@ ADD ${CHANNEL_URL} C:\TEMP\VisualStudio.chman
 ADD https://aka.ms/vs/15/release/vs_buildtools.exe C:\TEMP\vs_buildtools.exe
 #Download the QT files
 ADD https://download.qt.io/official_releases/qt/5.9/5.9.5/qt-opensource-windows-x86-5.9.5.exe C:\qt.exe
-# Add the silent installer script for QT
-COPY CI\Windows\qtifwsilent.qs C:\qtifwsilent.qs
 
-# Disable crash dialog for release-mode runtimes
-RUN start /wait msiexec.exe /i C:\TEMP\node-install.msi /l*vx "%TEMP%\MSI-node-install.log" /qn ADDLOCAL=ALL && \
-    C:\TEMP\Install.cmd C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
-    --channelUri C:\TEMP\VisualStudio.chman `
-    --installChannelUri C:\TEMP\VisualStudio.chman `
-    --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended`
-    --installPath C:\BuildTools && \
-    powershell -command "$Env:QT_INSTALL_DIR = 'C:\\Qt'; Start-Process C:\qt.exe -ArgumentList '--verbose --script C:\qtifwsilent.qs' -NoNewWindow -Wait" && \
-    dir "C:\Qt\5.9.5\msvc2015" && dir "C:\Qt\5.9.5\msvc2015_64" && dir "C:\Qt\5.9.5\msvc2015\bin\Qt5Script.dll" && dir "C:\Qt\5.9.5\msvc2015_64\bin\Qt5Script.dll" && \
-    del C:\TEMP\node-install.msi && del C:\TEMP\vs_buildtools.exe && del C:\qt.exe
-# Use developer command prompt and start PowerShell if no other command specified.
+RUN C:\TEMP\InstallVS.cmd
+
 ENTRYPOINT C:\BuildTools\Common7\Tools\VsDevCmd.bat &&
 CMD ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
